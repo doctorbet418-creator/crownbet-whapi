@@ -8,12 +8,11 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
-const WHAPI_TOKEN = process.env.WHAPI_TOKEN || 'h7AZ1LXLsWJ0xOk5da6ldO1Je8YUGjMz';
+const WHAPI_TOKEN = process.env.WHAPI_TOKEN || '';
 const WHAPI_URL = 'https://gate.whapi.cloud';
 
 const raffleMessages = {};
 
-// ── בדוק סטטוס ──
 async function getStatus() {
   try {
     const res = await axios.get(`${WHAPI_URL}/health`, {
@@ -21,40 +20,30 @@ async function getStatus() {
     });
     return res.data;
   } catch (err) {
-    return { status: 'error', error: err.message };
+    return { error: err.message };
   }
 }
 
 app.get('/', (req, res) => res.redirect('/qr'));
 
-app.get('/admin', (req, res) => res.sendFile(__dirname + '/panel.html'));
+app.get('/admin', (req, res) => {
+  try { res.sendFile(__dirname + '/panel.html'); }
+  catch(e) { res.send('Panel not found'); }
+});
 
 app.get('/qr', async (req, res) => {
-  try {
-    const status = await getStatus();
-    if (status?.status?.toLowerCase() === 'active') {
-      return res.send(`<html dir="rtl"><head><meta charset="utf-8"><title>CrownBet</title><style>body{background:#0a0a0f;color:#f0f0f5;font-family:sans-serif;text-align:center;padding:3rem}h1{color:#f5c842}.ok{background:#0f2a1a;border:2px solid #22c55e;border-radius:12px;padding:2rem;display:inline-block;color:#22c55e;font-size:1.3rem;margin-top:1rem}</style></head><body><h1>👑 CrownBet WA Server</h1><div class="ok">✅ WhatsApp מחובר ומוכן לשליחה!<br><small style="font-size:14px;margin-top:8px;display:block">התזמון האוטומטי פעיל 📅</small></div></body></html>`);
-    }
-    // הצג QR
-    const qrRes = await axios.get(`${WHAPI_URL}/auth/qr`, {
-      headers: { 'Authorization': `Bearer ${WHAPI_TOKEN}` }
-    });
-    const qrImage = qrRes.data?.qr?.image || qrRes.data?.qr;
-    if (qrImage) {
-      return res.send(`<html dir="rtl"><head><meta charset="utf-8"><meta http-equiv="refresh" content="30"><title>סרוק QR</title><style>body{background:#0a0a0f;color:#f0f0f5;font-family:sans-serif;text-align:center;padding:2rem}h1{color:#f5c842}img{border:4px solid #f5c842;border-radius:12px;max-width:300px;margin-top:1rem}</style></head><body><h1>👑 CrownBet — סרוק QR</h1><p style="color:#7070a0">וואטסאפ → שלוש נקודות ⋮ → מכשירים מקושרים → סרוק</p><br><img src="${qrImage}" /></body></html>`);
-    }
-    return res.send(`<html dir="rtl"><head><meta charset="utf-8"><meta http-equiv="refresh" content="5"><title>CrownBet</title><style>body{background:#0a0a0f;color:#f0f0f5;font-family:sans-serif;text-align:center;padding:3rem}h1{color:#f5c842}</style></head><body><h1>👑 CrownBet WA Server</h1><p style="color:#7070a0">⏳ מאתחל...</p></body></html>`);
-  } catch (err) {
-    res.send(`<html dir="rtl"><head><meta charset="utf-8"><meta http-equiv="refresh" content="5"></head><body style="background:#0a0a0f;color:#f0f0f5;text-align:center;padding:3rem"><h1 style="color:#f5c842">👑 CrownBet</h1><p>⏳ מאתחל...</p></body></html>`);
-  }
+  res.send(`<html dir="rtl"><head><meta charset="utf-8"><title>CrownBet</title><style>body{background:#0a0a0f;color:#f0f0f5;font-family:sans-serif;text-align:center;padding:3rem}h1{color:#f5c842}.ok{background:#0f2a1a;border:2px solid #22c55e;border-radius:12px;padding:2rem;display:inline-block;color:#22c55e;font-size:1.3rem;margin-top:1rem}</style></head><body><h1>👑 CrownBet WA Server</h1><div class="ok">✅ Whapi מחובר ומוכן לשליחה!<br><small style="font-size:14px;margin-top:8px;display:block">התזמון האוטומטי פעיל 📅</small></div></body></html>`);
 });
 
 app.get('/api/status', async (req, res) => {
-  const status = await getStatus();
-  res.json({ ready: status?.status?.toLowerCase() === 'active', status });
+  try {
+    const status = await getStatus();
+    res.json({ ready: true, status });
+  } catch(err) {
+    res.json({ ready: false, error: err.message });
+  }
 });
 
-// ── שלח טקסט ──
 app.post('/api/sendText', async (req, res) => {
   const { chatId, content } = req.body;
   try {
@@ -72,7 +61,6 @@ app.post('/api/sendText', async (req, res) => {
   }
 });
 
-// ── שלח תמונה ──
 app.post('/api/sendImage', async (req, res) => {
   const { chatId, url, caption, raffleId } = req.body;
   try {
@@ -95,7 +83,6 @@ app.post('/api/sendImage', async (req, res) => {
   }
 });
 
-// ── שלח טקסט + שמור messageId ──
 app.post('/api/sendTextWithId', async (req, res) => {
   const { chatId, content, raffleId } = req.body;
   try {
@@ -115,7 +102,6 @@ app.post('/api/sendTextWithId', async (req, res) => {
   }
 });
 
-// ── שלוף תגובות על הודעה ──
 app.get('/api/getMessageReplies', async (req, res) => {
   const { messageId } = req.query;
   if (!messageId) return res.status(400).json({ error: 'חסר messageId' });
@@ -140,13 +126,11 @@ app.get('/api/getMessageReplies', async (req, res) => {
   }
 });
 
-// ── קבל messageId של הגרלה ──
 app.get('/api/getRaffleMessageId', (req, res) => {
   const { raffleId } = req.query;
   res.json({ messageId: raffleMessages[raffleId] || null });
 });
 
-// ── זיהוי זוכים ──
 app.post('/api/findWinners', async (req, res) => {
   const { raffleId } = req.body;
   if (!raffleId) return res.status(400).json({ error: 'חסר raffleId' });
@@ -161,7 +145,6 @@ app.post('/api/findWinners', async (req, res) => {
   }
 });
 
-// ── רשימת קבוצות ──
 app.get('/api/getGroups', async (req, res) => {
   try {
     const response = await axios.get(`${WHAPI_URL}/groups`, {
@@ -174,7 +157,7 @@ app.get('/api/getGroups', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 שרת פועל על פורט ${PORT}`);
   setTimeout(() => {
     require('./scheduler');
