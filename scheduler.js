@@ -174,7 +174,7 @@ cron.schedule('27 16 * * *', async () => {
 }, { timezone: 'Asia/Jerusalem' });
 
 // 12:00 — הודעת צהריים
-cron.schedule('0 12 * * *', async () => {
+cron.schedule('22 12 * * *', async () => {
   console.log('⏰ 12:00 — הודעת צהריים');
   if (isMoatzash()) { sendWithDelay(() => sendText(getRandom(motzashMessages))); return; }
   const msg = isWeekend() ? getRandom(weekendMessages) : getRandom(weekdayNoon);
