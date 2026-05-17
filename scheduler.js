@@ -164,7 +164,7 @@ cron.schedule('0 10 * * *', async () => {
 }, { timezone: 'Asia/Jerusalem' });
 
 // 11:00 — הגרלה ראשונה (ללא עיכוב)
-cron.schedule('27 16 * * *', async () => {
+cron.schedule('23 18 * * *', async () => {
   console.log('⏰ 11:00 — הגרלה ראשונה');
   const raffles = await getTodayRaffles();
   if (raffles.length > 0) {
