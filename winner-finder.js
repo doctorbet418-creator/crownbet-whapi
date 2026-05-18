@@ -4,7 +4,7 @@ const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
 const SERVER_URL = process.env.SERVER_URL || 'http://localhost:3000';
 const SUPABASE_URL = 'https://oxraakhcpvthlvjvapay.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94cmFha2hjcHZ0aGx2anZhcGF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwNzY4MTUsImV4cCI6MjA5MzY1MjgxNX0.dftK8Qb9zjzwEVGRLv4Q54Pqn2SLrzOxUqydIYf3Xd8';
-const ADMIN_PHONE = '972504513838@c.us';
+const ADMIN_PHONE = '972502509560@s.whatsapp.net';
 
 // ── שלוף תגובות על הודעה מהקבוצה ──
 async function getMessageReplies(messageId) {
@@ -32,7 +32,6 @@ async function getRaffleById(raffleId) {
 
 // ── שלח ל-Claude AI לזיהוי זוכים ──
 async function findWinnersWithAI(raffleText, resultsText, replies, questionCount) {
-  // מיין תגובות לפי זמן — הראשון קודם
   const sortedReplies = [...replies].sort((a, b) => a.timestamp - b.timestamp);
   
   const repliesText = sortedReplies.map((r, i) => 
@@ -57,10 +56,10 @@ ${repliesText}
 1. לכל שאלה יש זוכה אחד בלבד — מי שניחש נכון ראשון
 2. אם 5 אנשים ניחשו נכון — רק הראשון מבחינת זמן זוכה
 3. היה גמיש עם שמות שחקנים: מבאפה/מבאפי/kylian/mbappe = אותו שחקן
-4. היה גמיש עם תוצאות: 3-2 / 3:2 / דורטמונד 3 פרנקפורט 2 = אותה תוצאה
+4. היה גמיש עם תוצאות: 3-2 / 3:2 = אותה תוצאה
 5. אם מישהו מחק או ערך הודעה — פסול אותו
 
-החזר JSON בלבד בפורמט הזה:
+החזר JSON בלבד:
 {
   "winners": [
     {
@@ -71,11 +70,9 @@ ${repliesText}
       "correct_answer": "התשובה הנכונה"
     }
   ],
-  "no_winner_questions": ["שאלה שאין לה זוכה אם יש"],
+  "no_winner_questions": ["שאלה שאין לה זוכה"],
   "summary": "סיכום קצר"
-}
-
-החזר JSON בלבד, ללא טקסט נוסף.`;
+}`;
 
   try {
     const res = await axios.post('https://api.anthropic.com/v1/messages', {
@@ -103,32 +100,30 @@ ${repliesText}
 function buildWinnersMessage(raffle, result) {
   const { winners, no_winner_questions, summary } = result;
   
-  let msg = `🏆 *זוכים בהגרלה!*\n`;
-  msg += `⚽ ${raffle.match_title}\n`;
-  msg += `━━━━━━━━━━━━━━━\n\n`;
+  let msg = `🏆 זוכים בהגרלה!\n`;
+  msg += `⚽ ${raffle.match_title}\n\n`;
   
   if (winners.length === 0) {
     msg += `😔 לא נמצאו זוכים בהגרלה הזו\n\n`;
   } else {
     winners.forEach((w, i) => {
-      msg += `🥇 *זוכה ${i + 1}*\n`;
+      msg += `🥇 זוכה ${i + 1}\n`;
       msg += `❓ שאלה: ${w.question}\n`;
-      msg += `👤 שם: *${w.name}*\n`;
-      msg += `📱 טלפון: ${w.phone.replace('@c.us', '').replace('@g.us', '')}\n`;
+      msg += `👤 שם: ${w.name}\n`;
+      msg += `📱 טלפון: ${w.phone.replace('@s.whatsapp.net', '').replace('@c.us', '').replace('@g.us', '')}\n`;
       msg += `✅ ניחש: ${w.guess}\n`;
       msg += `🎯 תשובה נכונה: ${w.correct_answer}\n\n`;
     });
   }
 
   if (no_winner_questions && no_winner_questions.length > 0) {
-    msg += `❌ *שאלות ללא זוכה:*\n`;
+    msg += `❌ שאלות ללא זוכה:\n`;
     no_winner_questions.forEach(q => {
-      msg += `  - ${q}\n`;
+      msg += `  ${q}\n`;
     });
     msg += '\n';
   }
 
-  msg += `━━━━━━━━━━━━━━━\n`;
   msg += `📊 ${summary}`;
   
   return msg;
